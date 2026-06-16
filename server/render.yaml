@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: shared-grid-server
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: CLIENT_ORIGIN
+        sync: false
