@@ -10,7 +10,7 @@ import {
   Users
 } from "lucide-react";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "https://shared-grid-backend-rc4w.onrender.com";
 
 function getStoredName() {
   return localStorage.getItem("shared-grid-name") || "";
