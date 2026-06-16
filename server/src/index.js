@@ -4,7 +4,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+const CLIENT_ORIGINS = (process.env.CLIENT_ORIGIN || "https://shared-grid-capture.vercel.app")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
