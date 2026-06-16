@@ -693,6 +693,21 @@ input:focus {
     padding: 12px;
   }
 
+  /* Allow page-level scrolling on small screens (mobile) */
+  html,
+  body {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Let the app shell grow instead of clamping to the viewport height so the page can scroll */
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+    grid-template-rows: unset;
+  }
+
   .topbar {
     align-items: flex-start;
     flex-direction: column;
@@ -717,6 +732,18 @@ input:focus {
   }
 
   .grid-board {
-    min-width: 720px;
+    min-width: 320px; /* allow the grid to shrink on small screens */
+  }
+
+  .board-scroll {
+    overflow-x: auto;
+  }
+
+  /* enable smooth touch scrolling for inner scrollable regions */
+  .board-scroll,
+  .activity-feed,
+  .panel-section.activity-panel .leaderboard {
+    -webkit-overflow-scrolling: touch;
+    touch-action: auto;
   }
 }
