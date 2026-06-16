@@ -20,6 +20,7 @@ function getStoredName() {
   return localStorage.getItem("shared-grid-name") || "";
 }
 
+
 function getStoredColor() {
   return localStorage.getItem("shared-grid-color") || "";
 }
