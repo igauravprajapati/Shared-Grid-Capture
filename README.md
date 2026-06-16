@@ -13,6 +13,7 @@ A full-stack assignment project: a clean, interactive shared board where many us
 
 - Hundreds of clickable cells on a shared board.
 - Anonymous users get a generated name and color.
+- Player identity, color, and selected block persist across browser refreshes.
 - Claiming a cell broadcasts instantly to all connected clients.
 - Conflict handling: already-owned cells cannot be overwritten.
 - Cooldown to prevent spam clicking.

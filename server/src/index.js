@@ -4,7 +4,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 
 const PORT = process.env.PORT || 3001;
-const CLIENT_ORIGINS = (process.env.CLIENT_ORIGIN || "https://shared-grid-capture.vercel.app")
+const CLIENT_ORIGINS = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean);
@@ -68,13 +68,21 @@ function pick(list) {
   return list[Math.floor(Math.random() * list.length)];
 }
 
-function createPlayer(socketId, providedName) {
+function createPlayer(socketId, providedName, providedClientId, providedColor) {
   const readableName = String(providedName || "").trim().slice(0, 18);
+  const stableId = String(providedClientId || "")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]/g, "")
+    .slice(0, 48);
+  const playerId = stableId || socketId;
+  const stableColor = palette.includes(providedColor) ? providedColor : pick(palette);
+
   return {
-    id: socketId,
+    id: playerId,
+    socketId,
     name: readableName || `${pick(names)}-${socketId.slice(0, 4)}`,
-    color: pick(palette),
-    score: 0,
+    color: stableColor,
+    score: board.filter((cell) => cell.ownerId === playerId).length,
     connectedAt: Date.now(),
     lastClaimAt: 0
   };
@@ -126,8 +134,19 @@ app.get("/health", (_req, res) => {
 
 io.on("connection", (socket) => {
   const requestedName = socket.handshake.auth?.name;
-  const player = createPlayer(socket.id, requestedName);
-  players.set(socket.id, player);
+  const requestedClientId = socket.handshake.auth?.clientId;
+  const requestedColor = socket.handshake.auth?.color;
+  const existingPlayer = players.get(requestedClientId);
+  const player =
+    existingPlayer || createPlayer(socket.id, requestedName, requestedClientId, requestedColor);
+
+  player.socketId = socket.id;
+  player.score = board.filter((cell) => cell.ownerId === player.id).length;
+  if (requestedName && !existingPlayer) {
+    player.name = String(requestedName).trim().slice(0, 18);
+  }
+
+  players.set(player.id, player);
 
   socket.emit("init", {
     player,
@@ -162,8 +181,20 @@ io.on("connection", (socket) => {
     }
 
     player.name = nextName;
+    board.forEach((cell) => {
+      if (cell.ownerId === player.id) {
+        cell.ownerName = player.name;
+        cell.ownerColor = player.color;
+      }
+    });
+
     ack?.({ ok: true, player });
     socket.emit("playerUpdated", player);
+    io.emit("playerTerritoryUpdated", {
+      playerId: player.id,
+      name: player.name,
+      color: player.color
+    });
     broadcastSnapshot();
   });
 
@@ -223,7 +254,10 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    players.delete(socket.id);
+    const activePlayer = players.get(player.id);
+    if (activePlayer?.socketId === socket.id) {
+      players.delete(player.id);
+    }
     pushEvent({
       id: `${Date.now()}-${socket.id}`,
       type: "leave",
