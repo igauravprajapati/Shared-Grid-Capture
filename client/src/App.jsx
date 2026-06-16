@@ -12,7 +12,9 @@ import {
   Users,
 } from "lucide-react";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3001";
+const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL ||
+  "https://shared-grid-backend-rc4w.onrender.com";
 
 function getStoredName() {
   return localStorage.getItem("shared-grid-name") || "";
@@ -66,10 +68,15 @@ export default function App() {
   const [selectedCellId, setSelectedCellId] = useState(getStoredSelectedCellId);
   const [toast, setToast] = useState("");
   const [pendingCell, setPendingCell] = useState(null);
+  const [joinsOnly, setJoinsOnly] = useState(false);
 
   useEffect(() => {
     const nextSocket = io(SERVER_URL, {
-      auth: { name: getStoredName(), clientId: getClientId(), color: getStoredColor() },
+      auth: {
+        name: getStoredName(),
+        clientId: getClientId(),
+        color: getStoredColor(),
+      },
     });
 
     nextSocket.on("connect", () => setConnected(true));
@@ -80,7 +87,9 @@ export default function App() {
       localStorage.setItem("shared-grid-color", payload.player.color);
       setBoard(payload.board);
       if (selectedCellId !== null) {
-        const restoredCell = payload.board.find((cell) => cell.id === selectedCellId);
+        const restoredCell = payload.board.find(
+          (cell) => cell.id === selectedCellId,
+        );
         if (restoredCell) setSelectedCell(restoredCell);
       }
       setBoardConfig(payload.boardConfig);
@@ -117,7 +126,9 @@ export default function App() {
     nextSocket.on("playerTerritoryUpdated", ({ playerId, name, color }) => {
       setBoard((current) =>
         current.map((cell) =>
-          cell.ownerId === playerId ? { ...cell, ownerName: name, ownerColor: color } : cell,
+          cell.ownerId === playerId
+            ? { ...cell, ownerName: name, ownerColor: color }
+            : cell,
         ),
       );
       setSelectedCell((current) =>
@@ -196,6 +207,13 @@ export default function App() {
     });
   }
 
+  function isJoinEvent(event) {
+    if (!event) return false;
+    // Prefer explicit type if provided, otherwise fall back to message text
+    if (event.type && event.type === "join") return true;
+    return /join/i.test(event.message || "");
+  }
+
   return (
     <main className="app-shell">
       <section className="workspace">
@@ -209,7 +227,8 @@ export default function App() {
             </p>
             <h1>Shared Grid Capture</h1>
             <p className="subtitle">
-              Claim open blocks, watch the map update instantly, and keep your color after refresh.
+              Claim open blocks, watch the map update instantly, and keep your
+              color after refresh.
             </p>
           </div>
           <div className="connection-pill" data-connected={connected}>
@@ -309,7 +328,9 @@ export default function App() {
           </div>
           <div className="profile-copy">
             <span>Your color</span>
-            <strong style={{ color: player?.color }}>{player?.color || "..."}</strong>
+            <strong style={{ color: player?.color }}>
+              {player?.color || "..."}
+            </strong>
           </div>
           <form onSubmit={saveName}>
             <label htmlFor="name">Player name</label>
@@ -376,15 +397,33 @@ export default function App() {
         </section>
 
         <section className="panel-section">
-          <div className="section-title">
-            <Activity size={18} />
-            Activity
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
+            <div className="section-title">
+              <Activity size={18} />
+              Activity
+            </div>
+            <button
+              type="button"
+              className={`filter-toggle ${joinsOnly ? "active" : ""}`}
+              onClick={() => setJoinsOnly((s) => !s)}
+              aria-pressed={joinsOnly}
+              title="Toggle show joins only"
+            >
+              Joins
+            </button>
           </div>
           <div className="activity-feed">
             {events.length === 0 ? (
               <p className="empty">The board is quiet.</p>
             ) : (
-              events.map((event) => (
+              (joinsOnly ? events.filter(isJoinEvent) : events).map((event) => (
                 <div className="event-row" key={event.id}>
                   <span style={{ background: event.color }} />
                   <p>{event.message}</p>
